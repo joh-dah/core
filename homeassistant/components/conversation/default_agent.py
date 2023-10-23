@@ -2,15 +2,17 @@
 from __future__ import annotations
 
 import asyncio
+import functools
+import logging
+import re
 from collections import defaultdict
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
-import functools
-import logging
 from pathlib import Path
-import re
 from typing import IO, Any
 
+import spacy
+import yaml
 from hassil.expression import Expression, ListReference, Sequence
 from hassil.intents import (
     Intents,
@@ -22,7 +24,8 @@ from hassil.intents import (
 from hassil.recognize import RecognizeResult, recognize_all
 from hassil.util import merge_dict
 from home_assistant_intents import get_domains_and_languages, get_intents
-import yaml
+from spacy.language import Language
+from spacy_language_detection import LanguageDetector
 
 from homeassistant import core, setup
 from homeassistant.components.homeassistant.exposed_entities import (
@@ -45,7 +48,6 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.helpers.typing import EventType
 from homeassistant.util.json import JsonObjectType, json_loads_object
-
 from .agent import AbstractConversationAgent, ConversationInput, ConversationResult
 from .const import DEFAULT_EXPOSED_ATTRIBUTES, DOMAIN
 
@@ -60,6 +62,15 @@ TRIGGER_CALLBACK_TYPE = Callable[[str, RecognizeResult], Awaitable[str | None]]
 def json_load(fp: IO[str]) -> JsonObjectType:
     """Wrap json_loads for get_intents."""
     return json_loads_object(fp.read())
+
+
+async def download_spacy_model():
+    if not spacy.util.is_package("en_core_web_sm"):
+        await asyncio.to_thread(spacy.cli.download, "en_core_web_sm")
+
+
+def get_lang_detector(nlp, name):
+    return LanguageDetector(seed=42)
 
 
 @dataclass(slots=True)
@@ -172,7 +183,16 @@ class DefaultAgent(AbstractConversationAgent):
         self, user_input: ConversationInput
     ) -> RecognizeResult | None:
         """Recognize intent from user input."""
-        language = user_input.language or self.hass.config.language
+        nlp_model = spacy.load("en_core_web_sm")
+        Language.factory("language_detector", func=get_lang_detector)
+        nlp_model.add_pipe('language_detector', last=True)
+
+        doc = nlp_model(user_input.text)
+        language_dict = doc._.language
+        print(language_dict)
+        language = language_dict.get("language") or user_input.language or self.hass.config.language
+        # language = user_input.language or self.hass.config.language
+        print(language)
         lang_intents = self._lang_intents.get(language)
 
         # Reload intents if missing or new components
