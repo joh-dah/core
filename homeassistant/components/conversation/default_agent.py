@@ -64,12 +64,13 @@ def json_load(fp: IO[str]) -> JsonObjectType:
     return json_loads_object(fp.read())
 
 
-async def download_spacy_model():
+async def _download_spacy_model():
+    """Download the language model used by spacy to detect language"""
     if not spacy.util.is_package("en_core_web_sm"):
         await asyncio.to_thread(spacy.cli.download, "en_core_web_sm")
 
 
-def get_lang_detector(nlp, name):
+def _spacy_get_lang_detector(nlp, name):
     return LanguageDetector(seed=42)
 
 
@@ -152,6 +153,7 @@ class DefaultAgent(AbstractConversationAgent):
         return get_domains_and_languages()["homeassistant"]
 
     async def async_initialize(self, config_intents):
+        await _download_spacy_model()
         """Initialize the default agent."""
         if "intent" not in self.hass.config.components:
             await setup.async_setup_component(self.hass, "intent", {})
@@ -184,7 +186,7 @@ class DefaultAgent(AbstractConversationAgent):
     ) -> RecognizeResult | None:
         """Recognize intent from user input."""
         nlp_model = spacy.load("en_core_web_sm")
-        Language.factory("language_detector", func=get_lang_detector)
+        Language.factory("language_detector", func=_spacy_get_lang_detector)
         nlp_model.add_pipe('language_detector', last=True)
 
         doc = nlp_model(user_input.text)
