@@ -1,0 +1,7 @@
+{
+  "domain": "translate_conversation",
+  "name": "Translate Conversation",
+  "requirements": [],
+  "config_flow": true,
+  "version": "0.1.0"
+}

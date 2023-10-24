@@ -1,5 +1,11 @@
 {
   "integration": {
+    "translate_conversation": {
+      "name": "Translate Conversation",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "local_push"
+    },
     "3_day_blinds": {
       "name": "3 Day Blinds",
       "integration_type": "virtual",
