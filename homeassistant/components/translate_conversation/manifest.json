@@ -1,7 +1,7 @@
 {
   "domain": "translate_conversation",
   "name": "Translate Conversation",
-  "requirements": ["spacy==3.7.2","spacy-language-detection==0.2.1","rwkv","torch","transformers"],
+  "requirements": ["spacy==3.7.2","spacy-language-detection==0.2.1","rwkv","torch","transformers","SentencePiece"],
   "config_flow": true,
   "version": "0.1.0"
 }

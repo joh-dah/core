@@ -26,23 +26,38 @@ def _spacy_get_lang_detector(nlp, name):
 
 
 class TranslateConversationAgent(agent.AbstractConversationAgent):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        skip_language_detect=False,
+        skip_rwkv=False,
+        skip_translate=False,
+    ) -> None:
         super().__init__()
         self.model = None
         self.pipeline = None
         if OFFLINE:
-            t1 = threading.Thread(target=self.init_language_detect)
-            t2 = threading.Thread(target=self.load_rwkv)
-            t3 = threading.Thread(target=self.init_translate)
-            t1.start()
-            t2.start()
-            t3.start()
-            t1.join()
-            t2.join()
-            t3.join()
+            t1, t2, t3 = None, None, None
+            if skip_language_detect == False and OFFLINE == True:
+                t1 = threading.Thread(target=self.init_language_detect)
+                t1.start()
+            if skip_rwkv == False and OFFLINE == True:
+                t2 = threading.Thread(target=self.load_rwkv)
+                t2.start()
+            if skip_translate == False and OFFLINE == True:
+                t3 = threading.Thread(target=self.init_translate)
+                t3.start()
+
+            if t1 != None:
+                t1.join()
+            if t2 != None:
+                t2.join()
+            if t3 != None:
+                t3.join()
 
     def load_rwkv(self):
         save_path = "homeassistant/components/translate_conversation/RWKV-t-World-1.5B-v1-20231021-ctx4096.pth"
+        if os.path.basename(os.getcwd()) == "translate_conversation":
+            save_path = "../../../homeassistant/components/translate_conversation/RWKV-t-World-1.5B-v1-20231021-ctx4096.pth"
         if not os.path.exists(save_path):
             print("start download rwkv")
             response = requests.get(
@@ -77,12 +92,16 @@ class TranslateConversationAgent(agent.AbstractConversationAgent):
         if OFFLINE:
             # first: detect language
             language = self.use_language_detect(user_input)
-            # language = user_input.language or self.hass.config.language
+            # language detect model has bugs, it recognize "hi", "hello", "hej" as Dutch
+            if user_input.text in ["hi", "Hi", "hello", "Hello"]:
+                language = "en"
+            elif user_input.text in ["Hej", "hej"]:
+                language = "sv"
             print(language)
-
+            if language[:2] == "zh":
+                language = "zh"
             # second: if it is in English, answer user question
-            # language detect model has bugs, it recognize "hi" and "hello" as Norwegian and Finnish
-            if language == "en" or user_input.text in ["hi", "Hi", "hello", "Hello"]:
+            if language == "en":
                 response = intent.IntentResponse(language=user_input.language)
                 response.async_set_speech(self.use_llm(user_input.text))
                 return agent.ConversationResult(conversation_id=None, response=response)

@@ -132,3 +132,4 @@ tmp_cache
 
 # python-language-server / Rope
 .ropeproject
+homeassistant/components/translate_conversation/RWKV-t-World-1.5B-v1-20231021-ctx4096.pth

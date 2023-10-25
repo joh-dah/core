@@ -1,5 +1,3 @@
-import asyncio
-
 from homeassistant.components.translate_conversation import TranslateConversationAgent
 
 
@@ -9,8 +7,6 @@ class input_class:
         self.text = text
 
 
-def test_agent():
-    a = TranslateConversationAgent()
-    i = input_class("en", "hi")
-    b = asyncio.run(a.async_process(i))
-    assert b.response.as_dict()["speech"]["plain"]["speech"] == "Test response"
+def test_language_detect():
+    a = TranslateConversationAgent(skip_rwkv=True, skip_translate=True)
+    assert a.use_language_detect(input_class("", "vad är ditt namn")) == "sv"
