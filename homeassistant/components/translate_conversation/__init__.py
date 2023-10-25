@@ -30,38 +30,21 @@ def _spacy_get_lang_detector(nlp, name):
 
 
 class TranslateConversationAgent(agent.AbstractConversationAgent):
-    def __init__(
-        self,
-        skip_language_detect=False,
-        skip_rwkv=False,
-        skip_translate=False,
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.model = None
-        self.pipeline = None
         if OFFLINE:
             self.init_components_offline()
 
-    def init_components_offline(
-        self, skip_language_detect=False, skip_rwkv=False, skip_translate=False
-    ):
-        t1, t2, t3 = None, None, None
-        if skip_language_detect is False and OFFLINE is True:
-            t1 = threading.Thread(target=self.init_language_detect)
-            t1.start()
-        if skip_rwkv is False and OFFLINE is True:
-            t2 = threading.Thread(target=self.load_rwkv)
-            t2.start()
-        if skip_translate is False and OFFLINE is True:
-            t3 = threading.Thread(target=self.init_translate)
-            t3.start()
-
-        if t1 is not None:
-            t1.join()
-        if t2 is not None:
-            t2.join()
-        if t3 is not None:
-            t3.join()
+    def init_components_offline(self):
+        t1 = threading.Thread(target=self.init_language_detect)
+        t1.start()
+        t2 = threading.Thread(target=self.load_rwkv)
+        t2.start()
+        t3 = threading.Thread(target=self.init_translate)
+        t3.start()
+        t1.join()
+        t2.join()
+        t3.join()
 
     def load_rwkv(self):
         save_path = "homeassistant/components/translate_conversation/RWKV-t-World-1.5B-v1-20231021-ctx4096.pth"
