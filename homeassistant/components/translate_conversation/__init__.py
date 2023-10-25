@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import intent
 
 OFFLINE = True
+LANGUAGE_KEYWORDS = {"en": ["hi", "Hi", "hello", "Hello"], "sv": []}
 
 
 async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
@@ -99,15 +100,11 @@ class TranslateConversationAgent(agent.AbstractConversationAgent):
         """Process a sentence."""
         if OFFLINE:
             language = self.use_language_detect(user_input)
-            # language detect model has bugs, it recognize "hi", "hello", "hej" as Dutch
-            if user_input.text in ["hi", "Hi", "hello", "Hello"]:
-                language = "en"
-            elif user_input.text in ["Hej", "hej"]:
-                language = "sv"
             print(language)
+            # with this the different types of chinese are disregarded
             if language[:2] == "zh":
                 language = "zh"
-            # second: if it is in English, answer user question
+            # if it is in English, answer user question
             if language == "en":
                 response = intent.IntentResponse(language=user_input.language)
                 response.async_set_speech(self.use_llm(user_input.text))
