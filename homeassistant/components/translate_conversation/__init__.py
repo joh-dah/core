@@ -104,7 +104,7 @@ class TranslateConversationAgent(agent.AbstractConversationAgent):
             # with this the different types of chinese are disregarded
             if language[:2] == "zh":
                 language = "zh"
-            # if it is in English, answer user question
+            # if input language is English, answer user question directly
             if language == "en":
                 response = intent.IntentResponse(language=user_input.language)
                 response.async_set_speech(self.use_llm(user_input.text))
